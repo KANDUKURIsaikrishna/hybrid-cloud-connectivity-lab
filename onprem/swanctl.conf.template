@@ -1,6 +1,6 @@
 # strongSwan swanctl configuration TEMPLATE - two IPsec tunnels to AWS.
 #
-# Terraform fills the ${...} placeholders and writes the result to onprem/swanctl.conf
+# Terraform fills the dollar-brace placeholders and writes the result to onprem/swanctl.conf
 # (gitignored, because it will then contain the pre-shared keys).
 #
 # Placeholders:
