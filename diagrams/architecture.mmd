@@ -1,0 +1,29 @@
+flowchart LR
+    subgraph ONPREM["Simulated on-prem VPC 10.0.0.0/16"]
+        direction TB
+        SS["strongSwan EC2 (Ubuntu)<br/>Elastic IP = Customer Gateway<br/>10.0.1.0/24 public subnet<br/>src/dst check OFF, ip_forward ON"]
+    end
+
+    subgraph AWS["AWS Region ap-south-1"]
+        direction LR
+
+        subgraph TGW["Transit Gateway (ASN 64512)"]
+            direction TB
+            RTO["tgw-rt-onprem<br/>(assoc: VPN)<br/>10.1/16 Prod · 10.2/16 Dev · 10.3/16 Shared"]
+            RTS["tgw-rt-spokes<br/>(assoc: Prod, Dev)<br/>10.3/16 Shared · 10.0/16 on-prem<br/>NO 10.1 / 10.2"]
+            RTH["tgw-rt-shared<br/>(assoc: Shared)<br/>10.1/16 · 10.2/16 · 10.0/16"]
+        end
+
+        PROD["Prod VPC 10.1.0.0/16<br/>private 10.1.1.0/24<br/>test EC2"]
+        DEV["Dev VPC 10.2.0.0/16<br/>private 10.2.1.0/24<br/>test EC2"]
+        SHARED["Shared Services VPC 10.3.0.0/16<br/>private 10.3.1.0/24<br/>test EC2"]
+    end
+
+    SS == "IPsec Tunnel 1 (primary)<br/>169.254.10.0/30" ==> RTO
+    SS -. "IPsec Tunnel 2 (backup)<br/>169.254.11.0/30" .-> RTO
+
+    PROD <--> RTS
+    DEV <--> RTS
+    SHARED <--> RTH
+
+    PROD x--x|"BLOCKED: no route"| DEV

@@ -1,0 +1,38 @@
+flowchart LR
+    subgraph DC["Corporate data center"]
+        direction TB
+        CR["Customer router<br/>BGP ASN 65000"]
+        SERVERS["On-prem servers<br/>10.0.0.0/16"]
+        SERVERS --- CR
+    end
+
+    subgraph DXL["Direct Connect location (colocation facility)"]
+        direction TB
+        CAGE["Customer / partner cage"]
+        DXR["AWS Direct Connect router"]
+        CAGE ---|"Cross-connect<br/>1/10/100 Gbps fiber"| DXR
+    end
+
+    subgraph AWSR["AWS Region ap-south-1"]
+        direction TB
+        DXGW["Direct Connect Gateway<br/>(global object)"]
+        TGW["Transit Gateway"]
+        PROD["Prod VPC 10.1.0.0/16"]
+        DEV["Dev VPC 10.2.0.0/16"]
+        SHARED["Shared VPC 10.3.0.0/16"]
+        VPNC["Site-to-Site VPN<br/>(backup)"]
+        DXGW -->|"Transit association"| TGW
+        TGW --- PROD
+        TGW --- DEV
+        TGW --- SHARED
+        VPNC --- TGW
+    end
+
+    CR == "PRIMARY: private fiber<br/>Transit VIF (802.1Q VLAN + BGP)" ==> CAGE
+    DXR ==> DXGW
+    CR -. "BACKUP: IPsec over the internet<br/>(used only if DX fails)" .-> VPNC
+
+    classDef primary stroke:#1a7f37,stroke-width:3px;
+    classDef backup stroke:#b35900,stroke-dasharray: 5 5;
+    class DXGW primary
+    class VPNC backup

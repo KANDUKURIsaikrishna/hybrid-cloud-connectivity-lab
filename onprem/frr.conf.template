@@ -1,0 +1,38 @@
+! FRR (BGP) configuration TEMPLATE - used ONLY in the optional BGP upgrade.
+! install_strongswan.sh fills the $VARIABLES from lab.env (via envsubst) and
+! writes the result to /etc/frr/frr.conf.
+!
+! strongSwan only builds the tunnels. It cannot speak BGP, so FRR runs on top and
+! peers with AWS over the tunnel "inside" addresses (169.254.x.x).
+frr defaults traditional
+hostname onprem-strongswan
+log syslog informational
+service integrated-vtysh-config
+!
+! Learned routes must leave with our VPC address as source, not the 169.254 tunnel address.
+route-map SET-SRC permit 10
+ set src $ONPREM_PRIVATE_IP
+exit
+!
+ip protocol bgp route-map SET-SRC
+!
+router bgp $ONPREM_ASN
+ bgp router-id $ONPREM_PRIVATE_IP
+ ! FRR 8+ refuses eBGP routes without a policy unless this is set.
+ no bgp ebgp-requires-policy
+ neighbor $T1_AWS_INSIDE remote-as $AWS_ASN
+ neighbor $T1_AWS_INSIDE description aws-tunnel1
+ neighbor $T2_AWS_INSIDE remote-as $AWS_ASN
+ neighbor $T2_AWS_INSIDE description aws-tunnel2
+ !
+ address-family ipv4 unicast
+  ! Advertise the on-prem VPC as one /16 summary (built from the connected /24).
+  network $ONPREM_SUBNET_CIDR
+  aggregate-address $ONPREM_VPC_CIDR summary-only
+  ! Use both tunnels at once (ECMP).
+  maximum-paths 2
+ exit-address-family
+exit
+!
+line vty
+!

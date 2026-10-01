@@ -1,0 +1,18 @@
+# Copy this file:  cp terraform.tfvars.example terraform.tfvars
+# Then edit the values below. terraform.tfvars is gitignored.
+
+region            = "ap-south-1"
+availability_zone = "ap-south-1a"
+
+# Find your public IP:  curl -s https://checkip.amazonaws.com
+# Then append /32. Example: "203.0.113.25/32"
+my_ip_cidr = "CHANGE_ME/32"
+
+# Name of an existing key pair in ap-south-1 (EC2 console > Key Pairs).
+key_name = "CHANGE_ME"
+
+# Keep "static" first. Switch to "bgp" only after static works (see 03_DEPLOYMENT_GUIDE).
+vpn_routing_mode = "static"
+
+# Set to true ONLY to prove that the Transit Gateway (not security groups) blocks Dev <-> Prod.
+allow_spoke_icmp_in_sg = false

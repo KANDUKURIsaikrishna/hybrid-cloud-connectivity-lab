@@ -1,0 +1,107 @@
+# strongSwan swanctl configuration TEMPLATE - two IPsec tunnels to AWS.
+#
+# Terraform fills the ${...} placeholders and writes the result to onprem/swanctl.conf
+# (gitignored, because it will then contain the pre-shared keys).
+#
+# Placeholders:
+#   cgw_public_ip  our Elastic IP (used as our IKE identity)
+#   t1_outside_ip / t2_outside_ip  AWS public tunnel endpoints
+#   t1_psk / t2_psk                pre-shared keys (SECRET)
+#   t1_if_id / t2_if_id            xfrm interface IDs (101 / 102)
+#
+# Route-based VPN: each tunnel is bound to a Linux "xfrm" interface (xfrm-aws1 / xfrm-aws2)
+# through if_id. Any packet routed out of that interface is encrypted into that tunnel.
+# Traffic selectors are 0.0.0.0/0 because AWS route-based VPNs negotiate "any <-> any".
+
+connections {
+
+    aws-tunnel1 {
+        version = 2
+        mobike = no                  # AWS does not support MOBIKE
+        reauth_time = 0              # rekey instead of full re-authentication
+        keyingtries = 0              # retry forever
+        local_addrs = %any
+        remote_addrs = ${t1_outside_ip}
+
+        # Phase 1 (IKE_SA). Must equal the Terraform values: AES256 / SHA2-256 / DH14
+        proposals = aes256-sha256-modp2048
+        rekey_time = 28800s
+        dpd_delay = 10s              # dead peer detection probe every 10s
+
+        local {
+            auth = psk
+            id = ${cgw_public_ip}    # AWS expects our public (Elastic) IP as identity
+        }
+        remote {
+            auth = psk
+            id = ${t1_outside_ip}
+        }
+
+        children {
+            aws-tunnel1-child {
+                local_ts = 0.0.0.0/0
+                remote_ts = 0.0.0.0/0
+
+                # Phase 2 (CHILD_SA / ESP) with PFS DH14. Must equal Terraform values.
+                esp_proposals = aes256-sha256-modp2048
+                rekey_time = 3600s
+
+                if_id_in = ${t1_if_id}
+                if_id_out = ${t1_if_id}
+
+                start_action = start       # bring the tunnel up as soon as config loads
+                dpd_action = restart       # if peer dies, rebuild
+                close_action = start       # if AWS closes it, bring it back
+            }
+        }
+    }
+
+    aws-tunnel2 {
+        version = 2
+        mobike = no
+        reauth_time = 0
+        keyingtries = 0
+        local_addrs = %any
+        remote_addrs = ${t2_outside_ip}
+
+        proposals = aes256-sha256-modp2048
+        rekey_time = 28800s
+        dpd_delay = 10s
+
+        local {
+            auth = psk
+            id = ${cgw_public_ip}
+        }
+        remote {
+            auth = psk
+            id = ${t2_outside_ip}
+        }
+
+        children {
+            aws-tunnel2-child {
+                local_ts = 0.0.0.0/0
+                remote_ts = 0.0.0.0/0
+                esp_proposals = aes256-sha256-modp2048
+                rekey_time = 3600s
+
+                if_id_in = ${t2_if_id}
+                if_id_out = ${t2_if_id}
+
+                start_action = start
+                dpd_action = restart
+                close_action = start
+            }
+        }
+    }
+}
+
+secrets {
+    ike-aws-tunnel1 {
+        id = ${t1_outside_ip}
+        secret = "${t1_psk}"
+    }
+    ike-aws-tunnel2 {
+        id = ${t2_outside_ip}
+        secret = "${t2_psk}"
+    }
+}

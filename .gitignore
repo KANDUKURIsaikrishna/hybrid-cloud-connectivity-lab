@@ -1,0 +1,70 @@
+# ---------- Personal notes ----------
+# Study notes are for me only, not for the public repo.
+docs-private/
+
+# ---------- Terraform internals ----------
+# Provider binaries and module cache. Large, and re-downloaded by `terraform init`.
+.terraform/
+
+# State holds real resource IDs AND the VPN pre-shared keys in plain text.
+*.tfstate
+*.tfstate.*
+
+# Plan files can also contain secret values.
+*.tfplan
+tfplan
+
+# Crash dumps may leak variable values and credentials.
+crash.log
+crash.*.log
+
+# Provider-version lock file. Ignored per course spec.
+# BEST PRACTICE is to COMMIT this file (it has no secrets, only provider
+# versions + checksums, and keeps every machine on identical provider builds).
+# To follow best practice, delete the next line.
+.terraform.lock.hcl
+
+# Real variable values (my IP, key name, etc.). Only the .example file is committed.
+terraform.tfvars
+*.auto.tfvars
+
+# Local override files can hold secrets.
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# ---------- Secrets and keys ----------
+# SSH private keys for the EC2 instances.
+*.pem
+*.key
+
+# Environment files often hold AWS credentials or tokens.
+.env
+.env.*
+
+# VPN config downloaded from the AWS console or CLI. It contains pre-shared keys.
+vpn-config*
+downloaded-vpn-config*
+*vpn_config*.txt
+*vpn_config*.xml
+
+# Files that Terraform GENERATES into onprem/ from the templates.
+# swanctl.conf contains the PSKs; lab.env holds tunnel IPs for this deployment.
+# Only the *.template files are committed.
+onprem/swanctl.conf
+onprem/lab.env
+onprem/frr.conf
+onprem/*.generated
+
+# Terraform output dumps (JSON) include sensitive values when exported.
+outputs.json
+terraform-outputs.json
+
+# ---------- OS / editor junk ----------
+# macOS Finder metadata.
+.DS_Store
+# VS Code workspace settings.
+.vscode/
+# JetBrains IDE settings.
+.idea/
