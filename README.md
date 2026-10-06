@@ -67,9 +67,14 @@ KEY_FILE=~/.ssh/<key>.pem ./tests/connectivity_tests.sh
 
 Optional: set `vpn_routing_mode = "bgp"` in `terraform.tfvars`, re-apply, and re-run step 3 to switch to dynamic routing.
 
+## Guides
+
+- [`docs/AWS_CONSOLE_BUILD_GUIDE.md`](docs/AWS_CONSOLE_BUILD_GUIDE.md): build the same lab by hand in the AWS Console, step by step (no Terraform).
+
 ## Repository layout
 
 ```
+docs/        console-only build guide
 terraform/   all AWS infrastructure
 onprem/      strongSwan install script + config templates
 diagrams/    Mermaid diagrams
